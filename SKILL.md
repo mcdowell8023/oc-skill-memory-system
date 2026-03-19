@@ -123,6 +123,33 @@ coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → �
 最多 3 个工具调用，完成后返回：「已写入 N 行，索引已更新」
 ```
 
+## Obsidian Vault 配置
+
+要让 Obsidian CLI 能搜索 Agent 的记忆文件，必须将以下两个目录都加入 vault：
+
+| Vault | 路径 | 内容 |
+|-------|------|------|
+| 文档库 | `~/open-claw-output/doc/`（或用户自定义） | 对外文档、知识文章 |
+| 工作区 | `~/.openclaw/workspace/` | 记忆日记、AGENTS.md、projects/ |
+
+**为什么 workspace 必须加入 vault？**
+- `memory/YYYY-MM-DD.md` 日记文件在 workspace 里
+- 不加入 vault，`obsidian search` 无法搜到记忆，全文降级失效
+
+**配置方法：**
+编辑 `~/.config/obsidian/obsidian.json`，在 `vaults` 对象中新增条目：
+```json
+"随机8位key": {
+  "path": "/home/用户名/.openclaw/workspace",
+  "ts": 当前时间戳毫秒,
+  "open": false
+}
+```
+
+**文档书写规范（双轨制）：**
+- 内部知识库 → 存 vault，用 `[[双链]]` + `#标签`，obsidian create 写入
+- 对外交付/飞书 → 标准 Markdown，不加双链
+
 ## 已知局限
 
 - `embeddinggemma-300M` 中文语义能力有限，专有名词/日期/短 query 建议用全文检索
