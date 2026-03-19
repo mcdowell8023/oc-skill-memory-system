@@ -1,6 +1,17 @@
 # openclaw-skill-memory-system
 
-OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 embedding 语义搜索 + Obsidian CLI 降级 + 心跳日记写入保障 + 纪昀专职日记角色。
+OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 embedding 语义搜索 + Obsidian CLI 降级 + 心跳日记写入保障 + diarist 专职日记角色。
+
+## 角色名说明
+
+本 Skill 使用两个角色概念，**名称可自定义**：
+
+| 概念 | 默认英文名 | 推荐中文名（可选） | 职责 |
+|------|-----------|-----------------|------|
+| coordinator | coordinator | 万三 | 总控调度，接收任务、派发、汇总 |
+| diarist | diarist | 纪昀 | 专职日记写入，记忆保障 |
+
+在你的 AGENTS.md 中，用任意名字注册这两个角色即可。
 
 ## 触发条件
 - 用户提到「记忆系统」「memory search」「AI 失忆」「memory_search 不工作」
@@ -13,7 +24,7 @@ OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 
 2. 验证：`scripts/health-check.sh` — 确认索引正常、搜索可用
 3. （可选）安装 Obsidian CLI 降级链路
 4. 配置 HEARTBEAT.md 心跳日记写入规则（使用 references/heartbeat-template.md）
-5. 在 AGENTS.md 中注册纪昀角色（见下方规格）
+5. 在 AGENTS.md 中注册 diarist 角色（见下方规格，角色名可自定义）
 6. 验证：`scripts/self-test.sh` — 全部通过后完成
 
 ## 记忆模式切换
@@ -68,37 +79,37 @@ OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 
 - `#标签` — 按项目/类型分类，obsidian search 可过滤
 - `相关：[[日期]]` — 跨日记关联，恢复上下文
 
-## 纪昀角色规格（专职日记 sub-agent）
+## diarist 角色规格（专职日记 sub-agent）
 
 ### 基本信息
-- 角色名：纪昀（diarist）
+- 角色名：diarist（日记员，可自定义，建议中文名「纪昀」）
 - 模型：`claude-haiku-4.5`（备选：`gpt-5-mini`）
 - 架构：正式 sub-agent，走标准 spawn/完成流程
 - 职责：专职日记写入，不产出面向用户内容
 
-### 触发规则（万三步骤 8）
+### 触发规则（coordinator 步骤 8）
 
-万三工作流固定步骤 8：审核汇总完成 → spawn 纪昀 → 再回复用户
+coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → 再回复用户
 
 触发条件（任一满足）：
 - 子代理 completion event 到达后
 - 重大决策落地
-- 万三主动判断值得记
+- coordinator 主动判断值得记
 
 ### 分工边界
 
 | 角色 | 写入目标 | 内容 |
 |------|---------|------|
-| 万三 | `status.json` | 当前任务状态、进度 |
-| 纪昀 | `memory/YYYY-MM-DD.md` | 事件日记，长期记忆原料 |
+| coordinator | `status.json` | 当前任务状态、进度 |
+| diarist | `memory/YYYY-MM-DD.md` | 事件日记，长期记忆原料 |
 
-### 纪昀 task 模板
+### diarist task 模板
 
 ```
-你是纪昀（diarist），专职写日记，不做其他任何事。
+你是 diarist（专职日记员），只负责写日记，不做其他任何事。
 
 将以下内容按四格格式追加到 ~/.openclaw/workspace/memory/YYYY-MM-DD.md：
-[事件摘要由万三填入]
+[事件摘要由 coordinator 填入]
 
 四格格式：
 ### HH:MM #标签
