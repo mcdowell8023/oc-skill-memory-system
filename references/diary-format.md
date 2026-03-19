@@ -1,58 +1,83 @@
-# Daily Diary Format
+# 每日日记格式规范
 
-Each day's memory is stored in `memory/YYYY-MM-DD.md`. Follow this format for consistency.
+日记文件路径：`~/.openclaw/workspace/memory/YYYY-MM-DD.md`
 
-## Template
-
-```markdown
-# YYYY-MM-DD — [Day summary in ≤10 words]
-
-## HH:MM — [Activity title]
-- What happened
-- Decisions made
-- Key context
-
-## HH:MM — [Next activity]
-- Details...
-
----
-## End of Day Summary
-- **Completed:** list of finished tasks
-- **Pending:** carry-over items for tomorrow
-- **Lessons:** anything worth remembering long-term (→ consider adding to MEMORY.md)
-```
-
-## Example
+## 标准格式
 
 ```markdown
-# 2026-03-19 — Memory system setup and NAS backup fix
+# YYYY-MM-DD 日记
 
-## 09:30 — Session start
-- User asked to configure memory system
-- Ran setup.sh, index built successfully (247 files, 12s)
-- Set memory mode to 语义 (default)
-
-## 11:15 — NAS backup investigation
-- Dispatched 移公 to check rsync logs
-- Root cause: disk full on /backup (98%)
-- Cleaned old snapshots, freed 120GB
-
-## 14:00 — Heartbeat diary configured
-- Added diary rule to HEARTBEAT.md
-- Frequency: 1 hour
-- First auto-write confirmed working
+## 会话概述
+- 主要工作：xxx
+- 关键决策：xxx
 
 ---
-## End of Day Summary
-- **Completed:** memory system configured, NAS backup fixed
-- **Pending:** monitor NAS disk usage over next week
-- **Lessons:** always check disk space before assuming rsync failure is network-related
+
+### HH:MM 心跳记录
+#项目标签 #子标签
+
+**决策：**
+- xxx
+
+**进展：**
+- 完成：[[相关文件或项目名]]
+- 进行中：xxx
+
+**阻塞：**
+- xxx（原因 + 等待什么）
+
+**待办：**
+- [ ] xxx
+
+相关：[[YYYY-MM-DD]] [[相关文档名]]
 ```
 
-## Guidelines
+## Obsidian 双链规范
 
-- Use 24-hour time format with timezone implied (configured in workspace)
-- Keep entries concise — this is a log, not a novel
-- Include decisions and reasoning, not just actions
-- End-of-day summary is optional but recommended for long/busy days
-- If session ends unexpectedly, write what you can on next startup
+### 双链 [[]]
+用于引用相关文件，建立反向链接和图谱关系：
+- 引用项目文档：`[[obsidian-cli-integration-architecture]]`
+- 引用相关日记：`[[2026-03-18]]`
+- 引用 Feishu 文档（用别名）：`[[科普指南]]`、`[[图灵架构文档]]`
+
+### 标签 #
+用于按主题聚合，方便 obsidian search 过滤：
+- 项目标签：`#记忆系统` `#Obsidian集成` `#Phase1` `#Phase4`
+- 类型标签：`#决策` `#阻塞` `#完成`
+- 常用标签组合：`#记忆系统 #Phase4 #完成`
+
+### 无新增时
+```markdown
+### HH:MM 心跳：无新增
+```
+
+## 示例
+
+```markdown
+# 2026-03-19 日记
+
+## 会话概述
+- 主要工作：记忆系统完整实施（Phase 1-4）
+- 关键决策：选用本地 embedding，Obsidian CLI 作降级
+
+---
+
+### 13:00 心跳记录
+#记忆系统 #Phase4 #飞书
+
+**决策：**
+- 科普指南重构为四部分结构（问题/修复/进阶/运营）
+
+**进展：**
+- 完成：[[科普指南]] 飞书文档重写（69 blocks）
+- 完成：[[openclaw-skill-memory-system]] 本地文件创建
+- 完成：[[图灵架构文档]] 新增附录 C、D
+
+**阻塞：**
+- GitHub 推送待用户授权（需 gh auth login 或 GITHUB_TOKEN）
+
+**待办：**
+- [ ] 心跳日记优化 A-E 落地
+
+相关：[[2026-03-18]] [[图灵架构文档]] [[记忆系统完全指南]]
+```
