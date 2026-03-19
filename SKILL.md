@@ -1,6 +1,6 @@
 # openclaw-skill-memory-system
 
-OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 embedding 语义搜索 + Obsidian CLI 降级 + 心跳日记写入保障。
+OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 embedding 语义搜索 + Obsidian CLI 降级 + 心跳日记写入保障 + 纪昀专职日记角色。
 
 ## 触发条件
 - 用户提到「记忆系统」「memory search」「AI 失忆」「memory_search 不工作」
@@ -13,7 +13,8 @@ OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 
 2. 验证：`scripts/health-check.sh` — 确认索引正常、搜索可用
 3. （可选）安装 Obsidian CLI 降级链路
 4. 配置 HEARTBEAT.md 心跳日记写入规则（使用 references/heartbeat-template.md）
-5. 验证：`scripts/self-test.sh` — 全部通过后完成
+5. 在 AGENTS.md 中注册纪昀角色（见下方规格）
+6. 验证：`scripts/self-test.sh` — 全部通过后完成
 
 ## 记忆模式切换
 
@@ -24,29 +25,40 @@ OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 
 
 切换时写入 `memory-mode.txt`，并主动告知用户。
 
-## 降级
-当 memory_search 不可用时，参考 references/ 目录配置 Obsidian CLI 作为降级方案。
+## 降级策略
+
+### 何时降级
+- memory_search 报错 / 超时 / 模型加载失败 → 自动切换全文模式
+- 0 结果且 query 关键词明确 → 建议并行 obsidian search（不自动判定索引损坏）
+
+### 恢复机制（冷却恢复，防抖）
+- 降级后记录时间戳
+- 每次查询前检查：距降级 > 10 分钟？→ 重试 memory_search 一次
+- 成功 → 切回语义模式，更新 memory-mode.txt
+- 失败 → 重置计时器，继续 fallback
+
+### 统一返回格式
+两种检索方案均映射到同一结构，调用方只需处理一种格式：
+
+```json
+{
+  "content": "命中文本",
+  "file": "来源文件路径",
+  "score": 0.72,
+  "source": "vector | obsidian | direct"
+}
+```
+全文检索时 score 为 null，source 标记来源链路。
 
 ## 心跳日记写入格式（Obsidian 双链规范）
 
-每次心跳写入时，必须使用以下格式：
-
 ```markdown
-### HH:MM 心跳记录
-#项目标签 #子标签
+### HH:MM #项目标签 #子标签
 
-**决策：**
-- xxx
-
-**进展：**
-- 完成：[[相关文件名]]
-- 进行中：xxx
-
-**阻塞：**
-- xxx（原因）
-
-**待办：**
-- [ ] xxx
+**时间戳：** YYYY-MM-DD HH:MM
+**事件：** 发生了什么（客观描述，1-3句）
+**决策：** 确认/选择了什么（结论，可为空）
+**影响：** 下步行动 / 待办 / 阻塞（[[双链]] 引用相关文件）
 
 相关：[[YYYY-MM-DD]] [[相关文档名]]
 ```
@@ -56,10 +68,60 @@ OpenClaw 记忆系统完整配置技能。解决 AI 失忆问题：配置本地 
 - `#标签` — 按项目/类型分类，obsidian search 可过滤
 - `相关：[[日期]]` — 跨日记关联，恢复上下文
 
-## 待实施优化项（Phase 4.1）
+## 纪昀角色规格（专职日记 sub-agent）
 
-- **优化 A**：事件驱动写入（子代理完成时立即写，不等心跳）
-- **优化 B**：四格强制格式（决策/进展/阻塞/待办）
-- **优化 C**：写入后验证（读最后几行确认落盘）
-- **优化 D**：摘要 vs 全量分离
-- **优化 E**：Obsidian 双链格式（已实施，见上）
+### 基本信息
+- 角色名：纪昀（diarist）
+- 模型：`claude-haiku-4.5`（备选：`gpt-5-mini`）
+- 架构：正式 sub-agent，走标准 spawn/完成流程
+- 职责：专职日记写入，不产出面向用户内容
+
+### 触发规则（万三步骤 8）
+
+万三工作流固定步骤 8：审核汇总完成 → spawn 纪昀 → 再回复用户
+
+触发条件（任一满足）：
+- 子代理 completion event 到达后
+- 重大决策落地
+- 万三主动判断值得记
+
+### 分工边界
+
+| 角色 | 写入目标 | 内容 |
+|------|---------|------|
+| 万三 | `status.json` | 当前任务状态、进度 |
+| 纪昀 | `memory/YYYY-MM-DD.md` | 事件日记，长期记忆原料 |
+
+### 纪昀 task 模板
+
+```
+你是纪昀（diarist），专职写日记，不做其他任何事。
+
+将以下内容按四格格式追加到 ~/.openclaw/workspace/memory/YYYY-MM-DD.md：
+[事件摘要由万三填入]
+
+四格格式：
+### HH:MM #标签
+**时间戳：** ...
+**事件：** ...
+**决策：** ...
+**影响：** ... [[双链]]
+相关：[[YYYY-MM-DD]]
+
+写完后执行：openclaw memory index 2>&1 | tail -3
+最多 3 个工具调用，完成后返回：「已写入 N 行，索引已更新」
+```
+
+## 已知局限
+
+- `embeddinggemma-300M` 中文语义能力有限，专有名词/日期/短 query 建议用全文检索
+- 1GB RAM 以下设备可能 OOM，建议低配机直接用 Obsidian CLI 方案
+- FTS5 在本机 Node.js 环境不可用，全文检索走 Obsidian CLI
+
+## 相关文档
+
+- `references/diary-format.md` — 日记格式完整规范
+- `references/heartbeat-template.md` — HEARTBEAT.md 模板
+- `scripts/setup.sh` — 一键配置脚本
+- `scripts/health-check.sh` — 健康检查
+- `scripts/self-test.sh` — 自测脚本
