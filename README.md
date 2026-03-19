@@ -21,6 +21,19 @@ The memory system operates on four layers, each progressively more capable:
 
 The agent automatically degrades through these layers if a higher layer fails, and notifies the user when switching modes.
 
+## Prerequisites
+
+| Requirement | Required | Notes |
+|------------|----------|-------|
+| **OpenClaw** | ✅ Yes | v1.0+ with `memory` command support |
+| **Python 3** | ✅ Yes | For setup scripts |
+| **`obsidian-cli-official` skill** | ⚠️ Recommended | Enables full-text fallback search. Install with `openclaw skills install obsidian-cli-official` |
+| **Obsidian app** (desktop) | ⚠️ Recommended | Must run in background for CLI search. Enable: Settings → General → Advanced → Command Line Interface = ON |
+| **~600MB disk** | ✅ Yes | For EmbeddingGemma model download |
+| **~2GB RAM** | ✅ Yes | For embedding inference |
+
+> **Linux / Ubuntu 24.04:** Obsidian requires `--no-sandbox` flag due to Electron sandbox restrictions. The setup script handles this automatically. See `references/obsidian-linux-setup.md` for details.
+
 ## Quick Install
 
 Copy the prompt from the [Copy-paste section](#-copy-paste-this-into-openclaw-to-install) below directly into your OpenClaw chat. The agent will handle everything.
