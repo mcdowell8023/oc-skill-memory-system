@@ -106,12 +106,14 @@ coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → �
 ### diarist task 模板
 
 ```
-你是 diarist（专职日记员），只负责写日记，不做其他任何事。
+你是纪昀（diarist），专职写日记，不做其他任何事。
 
-将以下内容按四格格式追加到 ~/.openclaw/workspace/memory/YYYY-MM-DD.md：
-[事件摘要由 coordinator 填入]
+使用 obsidian-cli-official Skill，将以下内容追加到日记文件。
 
-四格格式：
+执行命令（Linux 必须加 --no-sandbox）：
+obsidian --no-sandbox vault="workspace" append file="memory/YYYY-MM-DD" content="[四格内容]"
+
+四格格式（content 的值）：
 ### HH:MM #标签
 **时间戳：** ...
 **事件：** ...
@@ -119,25 +121,22 @@ coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → �
 **影响：** ... [[双链]]
 相关：[[YYYY-MM-DD]]
 
+content 中换行用 \n，不要用真实换行。
+
 写完后执行：openclaw memory index 2>&1 | tail -3
-最多 3 个工具调用，完成后返回：「已写入 N 行，索引已更新」
+最多 3 个工具调用，完成后返回 NO_REPLY（不打扰主会话）
 ```
 
 ## Obsidian Vault 配置
 
 要让 Obsidian CLI 能搜索 Agent 的记忆文件，必须将以下两个目录都加入 vault：
 
-| Vault | 路径 | 内容 |
-|-------|------|------|
-| 文档库 | `~/open-claw-output/doc/`（或用户自定义） | 对外文档、知识文章 |
-| 工作区 | `~/.openclaw/workspace/` | 记忆日记、AGENTS.md、projects/ |
+| Vault 名 | 路径 | 内容 |
+|---------|------|------|
+| `doc` | `~/open-claw-output/doc/` | 对外文档、知识文章 |
+| `workspace` | `~/.openclaw/workspace/` | 记忆日记、AGENTS.md、projects/ |
 
-**为什么 workspace 必须加入 vault？**
-- `memory/YYYY-MM-DD.md` 日记文件在 workspace 里
-- 不加入 vault，`obsidian search` 无法搜到记忆，全文降级失效
-
-**配置方法：**
-编辑 `~/.config/obsidian/obsidian.json`，在 `vaults` 对象中新增条目：
+配置方法：编辑 `~/.config/obsidian/obsidian.json`，在 `vaults` 对象中新增条目：
 ```json
 "随机8位key": {
   "path": "/home/用户名/.openclaw/workspace",
@@ -146,9 +145,41 @@ coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → �
 }
 ```
 
-**文档书写规范（双轨制）：**
-- 内部知识库 → 存 vault，用 `[[双链]]` + `#标签`，obsidian create 写入
-- 对外交付/飞书 → 标准 Markdown，不加双链
+> Vault 名称 = 路径最后一段目录名（`workspace`、`doc`）
+
+**为什么两个都要加：** obsidian search 只能搜 vault 内文件，workspace 不加则记忆日记无法被全文检索。
+
+## 文档书写规范（双轨制）
+
+- **内部知识库**（存 vault）→ 使用 `obsidian create` 写入，加 `[[双链]]` + `#标签` + YAML frontmatter
+- **对外交付/飞书** → 标准 Markdown，不加双链
+
+内部文档 frontmatter 模板：
+```yaml
+---
+tags: [项目名, 类型]
+created: YYYY-MM-DD
+related: [[关联文档名]]
+---
+```
+
+页脚模板：
+```
+---
+标签：#标签1 #标签2
+相关：[[文档A]] [[文档B]]
+```
+
+## Skill 使用规则
+
+此 Skill 必须在以下场景中显式加载，不得用 write/exec 绕过：
+
+| 场景 | 命令 |
+|------|------|
+| 追加日记内容 | `obsidian --no-sandbox vault="workspace" append file="memory/YYYY-MM-DD" content="..."` |
+| 创建新知识文档 | `obsidian --no-sandbox vault="workspace" create name="文档名" content="..."` |
+| 全文搜索记忆 | `obsidian --no-sandbox vault="workspace" search query="关键词"` |
+| 创建对外文档 | `obsidian --no-sandbox vault="doc" create name="文档名" content="..."` |
 
 ## 已知局限
 
