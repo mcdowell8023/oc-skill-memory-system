@@ -108,9 +108,11 @@ coordinator 工作流固定步骤 8：审核汇总完成 → spawn diarist → �
 ```
 你是纪昀（diarist），专职写日记，不做其他任何事。
 
-使用 obsidian-cli-official Skill，将以下内容追加到日记文件。
+**写入策略（优先级顺序）：**
+1. 首选：用 write 工具直接追加到 ~/.openclaw/workspace/memory/YYYY-MM-DD.md（最可靠）
+2. 备选：obsidian CLI（需要 Obsidian 正在运行）
 
-执行命令（Linux 必须加 --no-sandbox）：
+执行命令（obsidian CLI 备选，Linux 必须加 --no-sandbox）：
 obsidian --no-sandbox vault="workspace" append file="memory/YYYY-MM-DD" content="[四格内容]"
 
 四格格式（content 的值）：
@@ -180,6 +182,23 @@ related: [[关联文档名]]
 | 创建新知识文档 | `obsidian --no-sandbox vault="workspace" create name="文档名" content="..."` |
 | 全文搜索记忆 | `obsidian --no-sandbox vault="workspace" search query="关键词"` |
 | 创建对外文档 | `obsidian --no-sandbox vault="doc" create name="文档名" content="..."` |
+
+## 已知漏洞与修复记录
+
+### 漏洞1：工作结束后未 spawn diarist（2026-03-24 确认）
+- **现象：** 大量子代理串行工作后，coordinator 汇报用户时忘记步骤8（spawn diarist），导致整日记录丢失
+- **修复：** AGENTS.md 强化步骤8为硬性规则；增加每日22:00 cron 兜底检查
+
+### 漏洞2：diarist 依赖 obsidian CLI，Obsidian 未启动时静默失败
+- **现象：** diarist spawn 成功但写入失败，无错误提示
+- **修复：** diarist task 模板改为优先用 `write` 工具直接写文件，obsidian CLI 作为备选
+
+### 修复措施汇总（2026-03-27）
+1. **HEARTBEAT.md 加 Premium 低电量保护**：<20% 强制写日记，=0% 万三直接写不 spawn
+2. **每日22:00 cron 兜底检查**：检查日记完整性、重建索引、测试搜索可用性
+3. **diarist 写入降级**：write 工具 → obsidian CLI，不再单一依赖 CLI
+
+---
 
 ## 已知局限
 
